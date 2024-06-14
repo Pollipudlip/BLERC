@@ -1,6 +1,7 @@
 //import 'dart:js';
 //import 'dart:js';
 
+import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
@@ -17,10 +18,14 @@ class MainApp extends StatelessWidget{
   @override
   Widget build(BuildContext context) {
     const appTitle = 'BLE RC';
-    return const MaterialApp(
+    return  MaterialApp(
         title: appTitle,
         home: OrientationFrame(
           title: appTitle,
+        ),
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey,brightness: Brightness.dark),
         ),
     );
   }
@@ -132,6 +137,9 @@ class _gasBreakState extends State<gasBreakWidget>{
   double _width =0;
   double _height =0;
   double _aspect = 0;
+  Color indicatorColor =Colors.white;
+
+
   Image acceleratorImage = Image.asset('assets/gas_break_2.png',fit: BoxFit.fitHeight,alignment: Alignment.centerRight,);
 
   
@@ -144,42 +152,57 @@ class _gasBreakState extends State<gasBreakWidget>{
     _width = acceleratorImage.width != null ? acceleratorImage.width! : MediaQuery.of(context).size.width;
     //_aspect = acceleratorImage
     //acceleratorImage.frameBuilder
-    return Padding(
-      padding: const EdgeInsets.all(10.0),
-      child: GestureDetector(
-        onVerticalDragUpdate: (details) {
-          //_aspect= details.sourceTimeStamp!.inSeconds.ceilToDouble();
-          setState(() {
-            _position = calc().gasPosition(_height,details.localPosition.dy); //details.localPosition.dy;
-            //acceleratorImage = gasBreakDynamic(_position);
-            _width = acceleratorImage.width != null ? acceleratorImage.width! : MediaQuery.of(context).size.width;
-            //_position = details.localPosition.dy;
-          });
-        },
-        child: Container(
-          width: _width,
-          height: _height,
-          child:
-          
-        
-          //gasBreakDynamic(_position),
-          // Image.asset('assets/gas_break.png',fit: BoxFit.contain,alignment: Alignment.centerRight,color: Colors.blueGrey,),
-          
-          Stack(fit: StackFit.passthrough, children: [
-            //gasBreakDynamic(_position),
-            
-            CustomPaint(
-              painter: progressPainter(_position),
-              size: Size.fromWidth(_width),//acceleratorImage.width!= null ? Size.fromWidth(acceleratorImage.width! ) : Size.infinite,
-            ),
-            acceleratorImage,
-            //gasBreakDynamic(_position),
-            //Expanded(child:Image.asset('assets/gas_break.png',fit: BoxFit.contain,alignment: Alignment.centerRight,),),
-            //acceleratorImage,
-            // Image.asset('assets/gas_break.png',fit: BoxFit.none,),
-            // Expanded(child:CustomPaint(painter:  progressPainter(_position)),),
-            //RotatedBox(quarterTurns: -1, child: LinearProgressIndicator(value: _position,),),
-            /*ListView(
+    return  Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: GestureDetector(
+          onVerticalDragUpdate: (details) {
+            //_aspect= details.sourceTimeStamp!.inSeconds.ceilToDouble();
+            setState(() {
+              _position = calc().gasPosition(_height,details.localPosition.dy); //details.localPosition.dy;
+              indicatorColor = updateColor(_position);
+              //acceleratorImage = gasBreakDynamic(_position);
+              _width = acceleratorImage.width != null
+                  ? acceleratorImage.width!
+                  : MediaQuery.of(context).size.width;
+              //_position = details.localPosition.dy;
+            });
+          },
+          child: Container(
+            width: _width,
+            height: _height,
+            child:
+
+                //gasBreakDynamic(_position),
+                // Image.asset('assets/gas_break.png',fit: BoxFit.contain,alignment: Alignment.centerRight,color: Colors.blueGrey,),
+
+                Stack(fit: StackFit.passthrough, children: [
+              //gasBreakDynamic(_position),
+
+              CustomPaint(
+                painter: progressPainter(_position,Theme.of(context).colorScheme.surfaceVariant),
+                size: Size.fromWidth(
+                    _width), //acceleratorImage.width!= null ? Size.fromWidth(acceleratorImage.width! ) : Size.infinite,
+              ),
+              Image.asset(
+                'assets/gas_break_2.png',
+                fit: BoxFit.fitHeight,
+                alignment: Alignment.centerRight,
+                color: Theme.of(context).colorScheme.background,
+              ),
+              Image.asset(
+                'assets/break4_3.png',
+                fit: BoxFit.fitHeight,
+                alignment: Alignment.centerRight,
+                color: indicatorColor,
+              ),
+              //acceleratorImage,
+              //gasBreakDynamic(_position),
+              //Expanded(child:Image.asset('assets/gas_break.png',fit: BoxFit.contain,alignment: Alignment.centerRight,),),
+              //acceleratorImage,
+              // Image.asset('assets/gas_break.png',fit: BoxFit.none,),
+              // Expanded(child:CustomPaint(painter:  progressPainter(_position)),),
+              //RotatedBox(quarterTurns: -1, child: LinearProgressIndicator(value: _position,),),
+              /*ListView(
               children: [
                 Text(_width.toString()),
                 Text(_height.toString()),
@@ -188,14 +211,23 @@ class _gasBreakState extends State<gasBreakWidget>{
               ],
 
             )*/
-            
-            //Text(_position2.toString()),
-          ]),
+
+              //Text(_position2.toString()),
+            ]),
+          ),
         ),
-      ),
-      // Expanded(child: Image.asset('assets/gas_break.png',fit: BoxFit.contain,alignment: Alignment.centerRight,)),
+        // Expanded(child: Image.asset('assets/gas_break.png',fit: BoxFit.contain,alignment: Alignment.centerRight,)),
+      
     );
   }
+}
+Color updateColor(double input) {
+
+  int code = (input*229+26).ceil() ;
+  code = code << 24;
+  code = code | 0xFFFFFF;
+
+  return Color(code);
 }
 
 Image gasBreakDynamic (double input){
@@ -233,10 +265,11 @@ class TestCard extends StatelessWidget {
 
 class progressPainter extends CustomPainter{
   double value;
+  Color color;
  // ui.Image _image;
   //Future <ui.Image> _imageTemp;
   //ui.Image _image = ;
-  progressPainter(this.value);
+  progressPainter(this.value,this.color);
 
   
   
@@ -263,7 +296,7 @@ class progressPainter extends CustomPainter{
 
     canvas.drawRect(
       maskBar,
-      Paint()..color = Colors.green ,
+      Paint()..color = color ,
     );
 
     //canvas.drawImage(_image, Offset.zero, Paint());
