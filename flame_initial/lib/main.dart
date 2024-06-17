@@ -74,7 +74,7 @@ class OrientationFrame extends StatelessWidget{
             
           }
           else{
-            return TestCard(myContent: 'The Fuck?');
+            return TestCard(myContent: 'This should not happen');
           }
         },
       )
@@ -96,31 +96,40 @@ class steeringWidget extends StatefulWidget {
 class _steeringState extends State<steeringWidget>{
 
   double morning_angle =0;
+  double _width =0;
+  double _height =0;
+  Image steeringWheel =  Image.asset('assets/steering-wheel-icon.png',fit: BoxFit.fitWidth,color: Colors.white70,);
+  Image steeringArrows =  Image.asset('assets/steeringArrowsPos_2.png',fit: BoxFit.fitWidth,color: Colors.white70,);
  
   @override
   Widget build(BuildContext context) {
+    _height = MediaQuery.of(context).size.height;
+    _width = steeringArrows.width != null ? steeringWheel.width! : MediaQuery.of(context).size.width;
     
   return Padding(
-      padding: const EdgeInsets.all(3.0),
-      child: Transform(
-        alignment: FractionalOffset.center,
-        transform: Matrix4.rotationZ(morning_angle),
-        child: GestureDetector(
-          onHorizontalDragUpdate: (details) {
-            setState(() {
-              morning_angle = calc().steeringAngle(context.size!.width, details.localPosition.dx);
-            });
-          },
-          onHorizontalDragStart: (details) {
-            morning_angle = calc().steeringAngle(context.size!.width, details.localPosition.dx);
-          },
-
-          child:Image.asset('assets/steering-wheel-icon.png',fit: BoxFit.contain,),
-
-        )
-        
-      )                 
-      );
+        padding: const EdgeInsets.all(10.0),
+        child: Column(children: [
+          GestureDetector(
+            onHorizontalDragUpdate: (details) {
+              setState(() {
+                morning_angle = calc().steeringAngle(
+                    MediaQuery.of(context).size.width, details.localPosition.dx);
+              });
+            },
+            onHorizontalDragStart: (details) {
+              morning_angle = calc()
+                  .steeringAngle(MediaQuery.of(context).size.width, details.localPosition.dx);
+            },
+            child: Container(width: _width, child:steeringArrows),
+            
+          ),
+          Transform(
+            alignment: FractionalOffset.center,
+            transform: Matrix4.rotationZ(morning_angle),
+            child: Container(width: _width, child:steeringWheel),
+          
+          ),
+        ]));
   }
   
 }
@@ -159,6 +168,7 @@ class _gasBreakState extends State<gasBreakWidget>{
             //_aspect= details.sourceTimeStamp!.inSeconds.ceilToDouble();
             setState(() {
               _position = calc().gasPosition(_height,details.localPosition.dy); //details.localPosition.dy;
+              
               indicatorColor = updateColor(_position);
               //acceleratorImage = gasBreakDynamic(_position);
               _width = acceleratorImage.width != null
@@ -179,7 +189,7 @@ class _gasBreakState extends State<gasBreakWidget>{
               //gasBreakDynamic(_position),
 
               CustomPaint(
-                painter: progressPainter(_position,Theme.of(context).colorScheme.surfaceVariant),
+                painter: progressPainter(_position,Theme.of(context).colorScheme.secondaryContainer),
                 size: Size.fromWidth(
                     _width), //acceleratorImage.width!= null ? Size.fromWidth(acceleratorImage.width! ) : Size.infinite,
               ),
@@ -222,8 +232,19 @@ class _gasBreakState extends State<gasBreakWidget>{
   }
 }
 Color updateColor(double input) {
+  int code = 0;
+  if (input > 0) {
+    //acceleration
+    code = (input * 229 + 26).ceil();
+  } else if (input < 0) {
+    //reverse
+    code = (-input * 229 + 26).ceil();
+  } else {
+    //break
+    return Colors.orange.shade300;
+  }
 
-  int code = (input*229+26).ceil() ;
+  //int code = (input*229+26).ceil() ;
   code = code << 24;
   code = code | 0xFFFFFF;
 
@@ -271,7 +292,18 @@ class progressPainter extends CustomPainter{
   //ui.Image _image = ;
   progressPainter(this.value,this.color);
 
-  
+      /*******************
+     * min _____ 1
+     *     |   |
+     *     |   |
+     *     |   |
+     * 65% |___|  0
+     * 80% |___|  0
+     *     |   |
+     * max |___|  -1
+     * 
+     * 
+     ********************/
   
 
 
@@ -279,13 +311,29 @@ class progressPainter extends CustomPainter{
   void paint(Canvas canvas, Size size)
   //..color = Colors.green
    {
+    Rect maskBar = Rect.zero;
     
     //_imageTemp.whenComplete(() => null)
-    Rect maskBar = Rect.fromPoints(
-      Offset(0,size.height*(1-value)*0.9,), 
-      Offset(size.width,size.height)
+    if(value > 0 ){         //acceleration
+       maskBar = Rect.fromPoints(
+      Offset(0,size.height*0.6*(1-value),), 
+      Offset(size.width,size.height*0.6)
       
       );
+    }else if(value <  0){   //reverse
+              
+       maskBar = Rect.fromPoints(
+      Offset(0,size.height*0.8,), 
+      Offset(size.width,size.height*(0.8-value*0.2))
+      
+      );
+    }else{                           //break
+      
+    }
+    
+
+
+    
       /*
     Rect bar = Rect.fromLTWH(
       0,
@@ -323,14 +371,48 @@ class calc {
   }
 
   double gasPosition(double range,double value, {double upperLimit = 0.80,}){
-    double toRet = value;
-    toRet = value / upperLimit;
+    double toRet = value/range;
+    //print("position" + toRet.toString()+"value: " + value.toString() ) ;
+    if(toRet < 0) toRet = 0;
+    /*******************
+     * min _____ 1
+     *     |   |
+     *     |   |
+     *     |   |
+     * 75% |___|  0
+     * 80% |___|  0
+     *     |   |
+     * max |___|  -1
+     * 
+     * 
+     ********************/
+
+    if(toRet > 0.8 ){         //top range, reverse
+      toRet = -(toRet-0.8)/(0.2);
+    }else if(toRet > 0.65 ){   //Zero range, braking
+      toRet = 0;
+    }else if(toRet>0) {                           //bottom range, acceleration
+      toRet = 1-(toRet )/(0.65);
+    }else toRet =  1;
+    
+   
+    return toRet;
+/*
+    if(value > 0.8*range ){         //top range, reverse
+      return (value-range*0.8)/(range*0.2);
+    }else if(value > 0.75*range ){   //Zero range, braking
+      return 0;
+    }else{                           //bottom range, acceleration
+      return (value-range*0.25)/(range*0.75);
+    }
+    */
+    /*toRet = value / upperLimit;
     toRet = toRet / range;
     
     toRet = 1-toRet;
     if( toRet < 0.1  ) return 0;
     else if( toRet > 1 ) return 1;
-    else return toRet;
+    else return toRet;*/
   }
 }
 // <>
