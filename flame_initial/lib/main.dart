@@ -1,9 +1,9 @@
 //import 'dart:js';
 //import 'dart:js';
 
-import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+
 
 
 void main() {
@@ -98,37 +98,52 @@ class _steeringState extends State<steeringWidget>{
   double morning_angle =0;
   double _width =0;
   double _height =0;
+  GlobalKey _key = GlobalKey();
   Image steeringWheel =  Image.asset('assets/steering-wheel-icon.png',fit: BoxFit.fitWidth,color: Colors.white70,);
   Image steeringArrows =  Image.asset('assets/steeringArrowsPos_2.png',fit: BoxFit.fitWidth,color: Colors.white70,);
+
+  @override
+  void initState(){
+
+  }
+
+  void _showHints(){
+     //CoachMark coachMarkFAB = CoachMark();
+  }
  
   @override
   Widget build(BuildContext context) {
     _height = MediaQuery.of(context).size.height;
-    _width = steeringArrows.width != null ? steeringWheel.width! : MediaQuery.of(context).size.width;
+    _width = _key.currentContext!=null?(_key.currentContext!.findRenderObject()as RenderBox).size.width:MediaQuery.of(context).size.width;
     
   return Padding(
         padding: const EdgeInsets.all(10.0),
-        child: Column(children: [
-          GestureDetector(
-            onHorizontalDragUpdate: (details) {
-              setState(() {
-                morning_angle = calc().steeringAngle(
-                    MediaQuery.of(context).size.width, details.localPosition.dx);
-              });
-            },
-            onHorizontalDragStart: (details) {
-              morning_angle = calc()
-                  .steeringAngle(MediaQuery.of(context).size.width, details.localPosition.dx);
-            },
-            child: Container(width: _width, child:steeringArrows),
-            
-          ),
-          Transform(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          key: _key,
+          children: [
+            Transform(
             alignment: FractionalOffset.center,
             transform: Matrix4.rotationZ(morning_angle),
             child: Container(width: _width, child:steeringWheel),
           
           ),
+          GestureDetector(
+            onHorizontalDragUpdate: (details) {
+              setState(() {
+                morning_angle = calc().steeringAngle(
+                    _width, details.localPosition.dx);
+                    print("position" + details.localPosition.dx.toString()+"value: " + _width.toString() ) ;
+              });
+            },
+            onHorizontalDragStart: (details) {
+              morning_angle = calc()
+                  .steeringAngle(_width, details.localPosition.dx);
+            },
+            child: Container(width: _width, child:steeringArrows),
+            
+          ),
+          
         ]));
   }
   
@@ -174,6 +189,7 @@ class _gasBreakState extends State<gasBreakWidget>{
               _width = acceleratorImage.width != null
                   ? acceleratorImage.width!
                   : MediaQuery.of(context).size.width;
+                  print(_width.toString());
               //_position = details.localPosition.dy;
             });
           },
