@@ -10,7 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-    showcaseview: <latest-version>
+  showcaseview: ^3.0.0
+  flutter_reactive_ble: ^5.3.1
  
   
 flutter:
